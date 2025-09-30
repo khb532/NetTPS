@@ -35,30 +35,28 @@ void ANetPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 void ANetPlayer::TakeGun()
 {
 	// 나와 가장 가까운 총의 이름을 출력
-	float dist = 0.f;
-	AGun* CloseGun = nullptr;
-	
-	for (AActor* i : AllGun)
-	{
-		float comparedist = 0.f;
-		AGun* ig = Cast<AGun>(i);
-		if (ig != nullptr)
-		{
-			if (ig == AllGun[0])
-			{
-				dist = comparedist;
-				CloseGun = ig;
-			}
-			
-			comparedist = FVector::Dist(ig->GetActorLocation(), GetActorLocation());			
 
-			if (comparedist < dist)
-			{
-				dist = comparedist;
-				CloseGun = ig;
-			}
+	// 현재 가장 가까운 거리
+	float closedist = CanTakeGunRange;
+	// 가까운 총의 인덱스
+	int32 closeidx = -1;
+	
+	for (int32 i = 0; i < AllGun.Num(); i++)
+	{
+		// 현재 인덱스의 거리
+		float dist = FVector::Dist(AllGun[i]->GetActorLocation(), GetActorLocation());
+
+		// 거리가 너무 멀면 스킵
+		if (dist > CanTakeGunRange) continue;
+		// 허용 범위 내에 있다면
+		if (dist < CanTakeGunRange)
+		{
+			closeidx = i;
+			closedist = dist;
 		}
 	}
+	// 어느 총도 범위내에 없는경우 제외
+	if (closeidx != -1)
+		UE_LOG(LogTemp, Warning, TEXT("%f, %d"), closedist, closeidx);
 
-	UE_LOG(LogTemp, Warning, TEXT("%f , %s"), dist, *CloseGun->GetName());
 }
