@@ -2,6 +2,9 @@
 
 #include "EnhancedInputComponent.h"
 #include "Gun.h"
+#include "Components/StaticMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 ANetPlayer::ANetPlayer()
@@ -9,6 +12,8 @@ ANetPlayer::ANetPlayer()
 	GunComp = CreateDefaultSubobject<USceneComponent>(TEXT("GunComponent"));
 	GunComp->SetupAttachment(GetMesh(), TEXT("weapon_l"));
 	GunComp->SetRelativeLocation((FVector(0, 7.f, 5.5f)));
+
+	CameraBoom->SetRelativeLocation(CameraBoomLocationWithoutGun);
 }
 
 void ANetPlayer::BeginPlay()
@@ -31,32 +36,76 @@ void ANetPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	}
 }
 
+void ANetPlayer::AttachGun()
+{
+	// physics Off
+	// Attach to GunComp
+	UStaticMeshComponent* mesh = OwnGun->GetComponentByClass<UStaticMeshComponent>();
+	mesh->SetSimulatePhysics(false);
+
+	OwnGun->AttachToComponent(GunComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	hasGun = true;
+
+	ChangeCameraBoomSetting();
+}
+
+void ANetPlayer::DettachGun(AGun* ptr)
+{
+	hasGun = false;
+	UStaticMeshComponent* mesh = ptr->GetComponentByClass<UStaticMeshComponent>();
+	mesh->SetSimulatePhysics(true);
+
+	ptr->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	ChangeCameraBoomSetting();
+}
+
+void ANetPlayer::ChangeCameraBoomSetting()
+{
+	GetCharacterMovement()->bOrientRotationToMovement = !hasGun;
+	bUseControllerRotationYaw = hasGun;
+	CameraBoom->SetRelativeLocation(hasGun ? CameraBoomLocationWithGun : CameraBoomLocationWithoutGun);
+	CameraBoom->TargetArmLength = hasGun ? TargetArmLengthWithGun : TargetArmLengthWithoutGun;
+}
+
 
 void ANetPlayer::TakeGun()
 {
-	// 나와 가장 가까운 총의 이름을 출력
-
-	// 현재 가장 가까운 거리
-	float closedist = CanTakeGunRange;
-	// 가까운 총의 인덱스
-	int32 closeidx = -1;
-	
-	for (int32 i = 0; i < AllGun.Num(); i++)
+	if (!hasGun)
 	{
-		// 현재 인덱스의 거리
-		float dist = FVector::Dist(AllGun[i]->GetActorLocation(), GetActorLocation());
-
-		// 거리가 너무 멀면 스킵
-		if (dist > CanTakeGunRange) continue;
-		// 허용 범위 내에 있다면
-		if (dist < CanTakeGunRange)
+		// 나와 가장 가까운 총의 이름을 출력
+		closeidx = -1;
+		// 현재 가장 가까운 거리
+		float closedist = CanTakeGunRange;
+	
+		for (int32 i = 0; i < AllGun.Num(); i++)
 		{
-			closeidx = i;
-			closedist = dist;
+			// 현재 인덱스의 거리
+			float dist = FVector::Dist(AllGun[i]->GetActorLocation(), GetActorLocation());
+
+			// 거리가 너무 멀면 스킵
+			if (dist > CanTakeGunRange) continue;
+			// 허용 범위 내에 있다면
+			if (dist < CanTakeGunRange)
+			{
+				closeidx = i;
+				closedist = dist;
+			}
+		}
+		// 어느 총도 범위내에 없는경우 제외
+		if (closeidx != -1)
+		{
+			OwnGun = Cast<AGun>(AllGun[closeidx]);
+			AttachGun();
 		}
 	}
-	// 어느 총도 범위내에 없는경우 제외
-	if (closeidx != -1)
-		UE_LOG(LogTemp, Warning, TEXT("%f, %d"), closedist, closeidx);
+	else
+	{
+		// swap
+		AGun* tmp = OwnGun;
+		OwnGun = nullptr;
+		DettachGun(tmp);
+	}
 
 }
+

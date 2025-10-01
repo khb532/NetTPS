@@ -40,9 +40,22 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float GroundSpeed;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float DirH;	// Horizon 좌우
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float DirV;	// Vertical 상하
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool isArmed = false;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float PitchAngle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float YawAngle;
 	
 protected:
 
 private:
-	
 };

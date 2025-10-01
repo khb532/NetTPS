@@ -17,13 +17,17 @@ public:
 	// 총 집기&놓기 함수
 	void TakeGun();
 
+	UFUNCTION(BlueprintCallable)
+	bool GetHasGun(){ return hasGun;}
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	
 private:
-
-
+	// 총 탈부착
+	void AttachGun();
+	void DettachGun(class AGun* ptr);
 	
 	/*////////////////////*/
 	
@@ -44,9 +48,25 @@ public:
 	UPROPERTY(EditAnywhere)
 	float CanTakeGunRange = 200.f;
 
+	void ChangeCameraBoomSetting();
 	
 protected:
 	
 private:
-	
+	// 가까운 총의 인덱스
+	int32 closeidx = -1;
+
+	UPROPERTY()
+	class AGun* OwnGun;
+
+	// 총을 갖고있는지 여부
+	bool hasGun = false;
+
+	// 무장, CameraBoom Loc, Target Arm Length
+	FVector CameraBoomLocationWithGun = FVector(0, 70, 110);
+	float TargetArmLengthWithGun = 160;
+
+	// 비무장
+	FVector CameraBoomLocationWithoutGun = FVector(0, 0, 110);
+	float TargetArmLengthWithoutGun = 400;
 };

@@ -17,12 +17,31 @@ void UNetPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
-	// 이동속도 설정
+
 	if (PawnOwner != nullptr)
+	{
+		// 수평이속 설정
+		GroundSpeed = Velocity.Size2D();
+
+		// 이동속도 설정
 		Velocity = PawnOwner->GetVelocity();
-	// 수평이속 설정
-	GroundSpeed = Velocity.Size2D();
-	// 공중여부 설정
-	if (PawnOwner != nullptr)
+	
+		// 공중여부 설정
 		isAir = PawnOwner->GetMovementComponent()->IsFalling();
+		
+		isArmed = PawnOwner->GetHasGun();
+		if (isArmed)
+		{
+			FVector tmpV = Velocity;
+			tmpV.Z = 0.f;
+			
+			DirV = FVector::DotProduct(PawnOwner->GetActorForwardVector(), tmpV);
+			DirH = FVector::DotProduct(PawnOwner->GetActorRightVector(), tmpV);
+		}
+
+		// 무장여부 pitch yaw angle 설정
+		PitchAngle = isArmed ? -PawnOwner->GetBaseAimRotation().Pitch : 0;
+		YawAngle = isArmed ? 20 : 0;
+	}
+
 }
