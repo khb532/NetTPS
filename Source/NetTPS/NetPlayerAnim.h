@@ -1,19 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "NetPlayerAnim.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class NETTPS_API UNetPlayerAnim : public UAnimInstance
 {
 	GENERATED_BODY()
 
+/* Method */
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
@@ -22,7 +19,7 @@ protected:
 
 private:
 
-/*//////////////////////*/
+/* Field */
 public:
 	// Animation 소유 pawn
 	UPROPERTY()
@@ -57,5 +54,8 @@ public:
 	
 protected:
 
+	
 private:
+
+	
 };

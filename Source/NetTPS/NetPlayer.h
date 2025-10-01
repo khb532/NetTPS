@@ -10,6 +10,7 @@ class NETTPS_API ANetPlayer : public ANetTPSCharacter
 {
 	GENERATED_BODY()
 
+/* Method */
 public:
 	// 생성자
 	ANetPlayer();
@@ -20,22 +21,36 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool GetHasGun(){ return hasGun;}
 
+	void ChangeCameraBoomSetting();
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
+	
 	
 private:
 	// 총 탈부착
 	void AttachGun();
 	void DettachGun(class AGun* ptr);
+
+	// Fire & Reload
+	void Fire();
+	void Reload();
 	
-	/*////////////////////*/
-	
+
+/*Field*/
 public:
 	// 총 집기&놓기 InputAction
 	UPROPERTY(EditDefaultsOnly, Category=Input)
 	class UInputAction* TakeGunAction;
 
+	UPROPERTY(EditAnywhere, Category=Input)
+	class UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, Category=Input)
+	class UInputAction* ReloadAction;
+	
 	// 총을 붙일 Component
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* GunComp;
@@ -48,7 +63,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	float CanTakeGunRange = 200.f;
 
-	void ChangeCameraBoomSetting();
+	UPROPERTY(EditAnywhere)
+	class UAnimMontage* PlayerMontage;
+
 	
 protected:
 	

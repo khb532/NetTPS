@@ -33,6 +33,31 @@ void ANetPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	{
 		// 총 집기&놓기 Input -> 호출함수 등록
 		EIC->BindAction(TakeGunAction, ETriggerEvent::Started, this, &ANetPlayer::TakeGun);
+		EIC->BindAction(FireAction, ETriggerEvent::Started, this, &ANetPlayer::Fire);
+		EIC->BindAction(ReloadAction, ETriggerEvent::Started, this, &ANetPlayer::Reload);
+	}
+}
+
+void ANetPlayer::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// 누르고 있을 때
+	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(EKeys::J))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("J 키 누르고있음"));
+	}
+	// 눌렀을 때
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustPressed(EKeys::J))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("J 키 눌렀었음"));
+		
+	}
+	// 떼었을 때
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustReleased(EKeys::J))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("J 키 뗐음"));
+		
 	}
 }
 
@@ -58,6 +83,18 @@ void ANetPlayer::DettachGun(AGun* ptr)
 	ptr->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
 	ChangeCameraBoomSetting();
+}
+
+void ANetPlayer::Fire()
+{
+	if (!hasGun) return;
+	// Fire Anim Play
+	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Fire")));
+}
+
+void ANetPlayer::Reload()
+{
+	
 }
 
 void ANetPlayer::ChangeCameraBoomSetting()
