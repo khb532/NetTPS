@@ -15,6 +15,11 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
+	// 재장전 Anim 끝날때 호출될 이벤트함수
+	// Notify수신 규칙 : 함수이름
+	UFUNCTION()
+	void AnimNotify_OnReloadComplete();	// [HEAD]AnimNotify + '_' + AM_PlayerMontage의 추가된 Notify의 이름과 일치해야함.
+
 protected:
 
 private:

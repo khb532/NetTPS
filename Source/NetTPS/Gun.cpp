@@ -4,6 +4,7 @@ AGun::AGun()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	FillBullet();
 }
 
 void AGun::BeginPlay()
@@ -16,5 +17,10 @@ void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AGun::PopBullet()
+{
+	CurBullet--;
 }
 

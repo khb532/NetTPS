@@ -22,6 +22,10 @@ public:
 	bool GetHasGun(){ return hasGun;}
 
 	void ChangeCameraBoomSetting();
+
+	void OnReloadComplete();
+	
+	
 	
 protected:
 	virtual void BeginPlay() override;
@@ -37,7 +41,6 @@ private:
 	// Fire & Reload
 	void Fire();
 	void Reload();
-	
 
 /*Field*/
 public:
@@ -86,4 +89,7 @@ private:
 	// 비무장
 	FVector CameraBoomLocationWithoutGun = FVector(0, 0, 110);
 	float TargetArmLengthWithoutGun = 400;
+
+	// Anim재생중 다른Anim Interpt 방지
+	bool bReloading = false;
 };

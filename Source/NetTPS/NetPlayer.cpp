@@ -88,13 +88,34 @@ void ANetPlayer::DettachGun(AGun* ptr)
 void ANetPlayer::Fire()
 {
 	if (!hasGun) return;
+	if (bReloading) return;
+
+	// 총알이 없으면 탈출
+	if (OwnGun->GetBulletCount() <= 0) return;
 	// Fire Anim Play
 	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Fire")));
+
+	OwnGun->PopBullet();
+	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
 }
 
 void ANetPlayer::Reload()
 {
-	
+	if (!hasGun) return;
+	if (OwnGun->IsFillBullet()) return;
+	if (bReloading) return;
+	bReloading = true;
+	// Reload Anim Play
+	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Reload")));
+
+}
+
+void ANetPlayer::OnReloadComplete()
+{
+	OwnGun->FillBullet();
+	UE_LOG(LogTemp, Warning, TEXT("Reload"));
+	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
+	bReloading = false;
 }
 
 void ANetPlayer::ChangeCameraBoomSetting()
@@ -136,7 +157,8 @@ void ANetPlayer::TakeGun()
 			AttachGun();
 		}
 	}
-	else
+	// 재장전중 총 탈착방지
+	else if ( bReloading == false)
 	{
 		// swap
 		AGun* tmp = OwnGun;

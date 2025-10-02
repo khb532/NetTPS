@@ -42,3 +42,11 @@ void UNetPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 }
+
+void UNetPlayerAnim::AnimNotify_OnReloadComplete()
+{
+	if (IsValid(PawnOwner))
+	{
+		PawnOwner->OnReloadComplete();
+	}
+}
