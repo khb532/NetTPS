@@ -69,6 +69,14 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UAnimMontage* PlayerMontage;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UUserWidget> MainWidget;
+
+	UPROPERTY()
+	class UMainWidget* MainUI;
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* HitEffect;
 	
 protected:
 	

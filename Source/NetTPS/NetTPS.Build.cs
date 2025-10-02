@@ -18,10 +18,11 @@ public class NetTPS : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"Niagara"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"NetTPS",

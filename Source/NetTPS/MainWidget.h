@@ -10,7 +10,7 @@ class NETTPS_API UMainWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-	/* Method */
+/* Method */
 public:
 	// 총알 UI를 현재 총알수 만큼 추가
 	void AddBullet(int32 cnt);
@@ -20,18 +20,24 @@ public:
 
 	// 총알UI 전체 제거
 	void PopAllBullet();
+
+	// crosshair on/off
+	void ShowCrosshair(bool bshow);
 protected:
 
 private:
 
 
-	/* Field */
+/* Field */
 public:
-	UPROPERTY()		// WBP_Bullet을 저장
-	TSubclassOf<UUserWidget> BulletWidget;
+	UPROPERTY(EditAnywhere)		// WBP_Bullet을 저장
+	TSubclassOf<class UUserWidget> BulletWidget;
 
 	UPROPERTY(meta=(BindWidget))	// WBP의 UI항목 이름과 일치
 	class UHorizontalBox* MagazineBox;
+
+	UPROPERTY(meta=(BindWidget))	// crosshair 담을 변수
+	class UImage* Crosshair;
 
 protected:
 

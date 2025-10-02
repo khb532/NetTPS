@@ -1,6 +1,7 @@
 #include "MainWidget.h"
 
 #include "Components/HorizontalBox.h"
+#include "Components/Image.h"
 
 void UMainWidget::AddBullet(int32 cnt)
 {
@@ -10,11 +11,10 @@ void UMainWidget::AddBullet(int32 cnt)
 	// bullet count만큼 총알 ui생성
 	for (int32 i = 0; i < cnt; i++)
 	{
-		UUserWidget* BulletUI = CreateWidget(GetWorld(), BulletWidget);
+		UUserWidget* BulletUI = CreateWidget<UUserWidget>(GetWorld(), BulletWidget);
 		// MagazineBox에 자식으로 설정
 		MagazineBox->AddChildToHorizontalBox(BulletUI);
 	}
-
 	
 }
 
@@ -35,4 +35,11 @@ void UMainWidget::PopAllBullet()
 		MagazineBox->RemoveChildAt(0);
 	}*/
 }
+
+void UMainWidget::ShowCrosshair(bool bshow)
+{
+	Crosshair->SetVisibility(bshow ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	
+}
+
 
