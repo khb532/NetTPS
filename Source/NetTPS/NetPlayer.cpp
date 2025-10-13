@@ -2,6 +2,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "Gun.h"
+#include "HPBar.h"
 #include "Blueprint/UserWidget.h"
 #include "MainWidget.h"
 #include "Camera/CameraComponent.h"
@@ -11,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ANetPlayer::ANetPlayer()
@@ -19,6 +21,8 @@ ANetPlayer::ANetPlayer()
 	GunComp->SetupAttachment(GetMesh(), TEXT("weapon_l"));
 	GunComp->SetRelativeLocation((FVector(0, 7.f, 5.5f)));
 
+	CompHp = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP"));
+	CompHp->SetupAttachment(RootComponent);
 }
 
 void ANetPlayer::BeginPlay()
@@ -71,6 +75,7 @@ void ANetPlayer::Tick(float DeltaSeconds)
 		UE_LOG(LogTemp, Warning, TEXT("J 키 뗐음"));
 		
 	}
+	BillboardHpbar();
 }
 
 void ANetPlayer::AttachGun()
@@ -107,17 +112,86 @@ void ANetPlayer::DettachGun(AGun* ptr)
 
 	// crosshair off
 	MainUI->ShowCrosshair(false);
+
+	OnFireComplete();
 }
 
 void ANetPlayer::Fire()
 {
 	if (!hasGun) return;
 	if (bReloading) return;
-
 	// 총알이 없으면 탈출
 	if (OwnGun->GetBulletCount() <= 0) return;
+
+	// 공격중
+	if (isFire)
+	{
+		// Combo 연결
+		isCombo = true;
+	}
+	else    // 첫 공격
+	{
+		isFire = true;
+		// 공격 실행
+		FiringAction();
+	}
+}
+
+void ANetPlayer::Reload()
+{
+	if (!hasGun) return;
+	if (OwnGun->IsFillBullet()) return;
+	if (bReloading) return;
+	if (isFire) return;
+	bReloading = true;
+	// Reload Anim Play
+	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Reload")));
+
+	
+}
+
+void ANetPlayer::DamageProcess(float damage)
+{
+	// 내가 컨트롤하지 않는 캐릭터만
+	// 머리위의 HP bar
+	UHPBar* hpbar = Cast<UHPBar>(CompHp->GetWidget());
+	// 머리위의 HP bar 갱신
+	float CurHp = hpbar->UpdateHP(damage);
+
+	// 내가 컨트롤중인 Player만
+	// MainUI의 HPbar 갱신
+	MainUI->HpBarUI->UpdateHP(damage);
+
+	// 사망 여부 설정
+	isDead = CurHp <= 0;
+}
+
+void ANetPlayer::BillboardHpbar()
+{
+	// 컨트롤중인 카메라
+	AActor* Camera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);	
+	// 카메라의 앞 방향의 반대로, Z벡터는 고정
+	FRotator rot = UKismetMathLibrary::MakeRotFromXZ(-Camera->GetActorForwardVector(), Camera->GetActorUpVector());
+	// CompHp의 회전 적용
+	CompHp->SetWorldRotation(rot);
+}
+
+void ANetPlayer::OnReloadComplete()
+{
+	bReloading = false;
+	OwnGun->FillBullet();
+	UE_LOG(LogTemp, Warning, TEXT("Reload"));
+	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
+
+	// 총알UI 가득 채우기
+	MainUI->AddBullet(OwnGun->GetBulletCount());
+}
+
+void ANetPlayer::FiringAction()
+{
 	// Fire Anim Play
-	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Fire")));
+	FString FireName = FString::Printf(TEXT("Fire_%d"), ComboCount);
+	PlayAnimMontage(PlayerMontage, 1, FName(FireName));
 
 	OwnGun->PopBullet();
 	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
@@ -152,29 +226,38 @@ void ANetPlayer::Fire()
 		
 		// 맞은지점 파티클 효과 생성
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, HitResult.Location, Rot);
+
+		// 만약 맞은 Actor가 NetPlayer라면
+		if ( auto Player = Cast<ANetPlayer>(HitResult.GetActor()) )
+		{
+			// 데미지 처리 하자.
+			Player->DamageProcess(20);
+
+			// DamgeUI on
+			MainUI->ShowDamageUI();
+		}
 	}
 }
 
-void ANetPlayer::Reload()
+void ANetPlayer::OnCombo()
 {
-	if (!hasGun) return;
-	if (OwnGun->IsFillBullet()) return;
-	if (bReloading) return;
-	bReloading = true;
-	// Reload Anim Play
-	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Reload")));
+	// 콤보키를 누르지 않는다면 탈출
+	if (isCombo == false) return;
 
+	// 다음 콤보 체크를 위해 isCombo = false
+	isCombo = false;
+
+	ComboCount++;
+
+	// 공격액션 실행
+	FiringAction();
 }
 
-void ANetPlayer::OnReloadComplete()
+void ANetPlayer::OnFireComplete()
 {
-	bReloading = false;
-	OwnGun->FillBullet();
-	UE_LOG(LogTemp, Warning, TEXT("Reload"));
-	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
-
-	// 총알UI 가득 채우기
-	MainUI->AddBullet(OwnGun->GetBulletCount());
+	// 콤보관련 변수 초기화
+	isFire = isCombo = false;
+	ComboCount = 0;
 }
 
 void ANetPlayer::ChangeCameraBoomSetting()

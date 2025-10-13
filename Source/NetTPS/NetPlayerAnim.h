@@ -20,6 +20,12 @@ public:
 	UFUNCTION()
 	void AnimNotify_OnReloadComplete();	// [HEAD]AnimNotify + '_' + AM_PlayerMontage의 추가된 Notify의 이름과 일치해야함.
 
+	UFUNCTION()
+	void AnimNotify_OnCombo();
+
+	UFUNCTION()
+	void AnimNotify_OnFireComplete();
+
 protected:
 
 private:
@@ -56,11 +62,13 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float YawAngle;
-	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool isDie;
 protected:
 
 	
 private:
-
+	
 	
 };

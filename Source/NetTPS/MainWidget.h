@@ -23,10 +23,15 @@ public:
 
 	// crosshair on/off
 	void ShowCrosshair(bool bshow);
+
+	// DamageUI on/off
+	void ShowDamageUI();
+	
 protected:
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
-
+	
 
 /* Field */
 public:
@@ -39,8 +44,17 @@ public:
 	UPROPERTY(meta=(BindWidget))	// crosshair 담을 변수
 	class UImage* Crosshair;
 
+	UPROPERTY(meta=(BindWidget))
+	class UHPBar* HpBarUI;
+
+	UPROPERTY(meta=(BindWidget))
+	class UImage* DamageUI;
+
 protected:
+	
 
 private:
+	// DamageUI 의 Opacity
+	float DamageOpacity = 0.f;
 	
 };

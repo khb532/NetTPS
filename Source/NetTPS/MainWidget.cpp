@@ -42,4 +42,25 @@ void UMainWidget::ShowCrosshair(bool bshow)
 	
 }
 
+void UMainWidget::ShowDamageUI()
+{
+	DamageOpacity = 1;
+}
+
+void UMainWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (DamageOpacity > 0)
+	{
+		DamageOpacity -= InDeltaTime * 3.f;
+
+		// 0 Gaurd
+		DamageOpacity = FMath::Max(DamageOpacity, 0.f);
+
+		// DamageUI의 RenderOpacity Set
+		DamageUI->SetRenderOpacity(DamageOpacity);
+	}
+}
+
 

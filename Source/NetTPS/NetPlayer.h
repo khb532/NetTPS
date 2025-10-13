@@ -24,8 +24,14 @@ public:
 	void ChangeCameraBoomSetting();
 
 	void OnReloadComplete();
+
+	void FiringAction();
 	
-	
+	// 콤보가 진행되는지 함수
+	void OnCombo();
+
+	// 공격 마무리 (콤보끊김 & 마지막공격)
+	void OnFireComplete();
 	
 protected:
 	virtual void BeginPlay() override;
@@ -41,6 +47,10 @@ private:
 	// Fire & Reload
 	void Fire();
 	void Reload();
+
+	void DamageProcess(float damage);
+	void BillboardHpbar();
+
 
 /*Field*/
 public:
@@ -77,6 +87,19 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* HitEffect;
+
+	UPROPERTY(EditAnywhere)
+	class UWidgetComponent* CompHp;
+	
+	// 사망
+	bool isDead;
+	
+	// 공격 시작 여부
+	bool isFire;
+	// 콤보 동작 여부
+	bool isCombo;
+	// 콤보 카운트
+	int32 ComboCount;
 	
 protected:
 	
@@ -100,4 +123,6 @@ private:
 
 	// Anim재생중 다른Anim Interpt 방지
 	bool bReloading = false;
+
+
 };

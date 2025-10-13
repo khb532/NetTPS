@@ -39,6 +39,8 @@ void UNetPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 		// 무장여부 pitch yaw angle 설정
 		PitchAngle = isArmed ? -PawnOwner->GetBaseAimRotation().Pitch : 0;
 		YawAngle = isArmed ? 20 : 0;
+
+		isDie = PawnOwner->isDead;
 	}
 
 }
@@ -48,5 +50,21 @@ void UNetPlayerAnim::AnimNotify_OnReloadComplete()
 	if (IsValid(PawnOwner))
 	{
 		PawnOwner->OnReloadComplete();
+	}
+}
+
+void UNetPlayerAnim::AnimNotify_OnCombo()
+{
+	if (PawnOwner != nullptr)
+	{
+		PawnOwner->OnCombo();
+	}
+}
+
+void UNetPlayerAnim::AnimNotify_OnFireComplete()
+{
+	if (PawnOwner != nullptr)
+	{
+		PawnOwner->OnFireComplete();
 	}
 }
