@@ -11,7 +11,7 @@ ANetActor::ANetActor()
 	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	SetRootComponent(Mesh);
-
+	
 	bReplicates = true;
 }
 
@@ -19,6 +19,14 @@ void ANetActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	Material = Mesh->CreateDynamicMaterialInstance(0);
+
+	// 1초마다 색 변경 타이머
+	FTimerHandle ColorTHandle;
+	GetWorldTimerManager().SetTimer(ColorTHandle, this, &ANetActor::ChangeColor, 1.f, true);
+	
+	FTimerHandle ScaleTHandle;
+	GetWorldTimerManager().SetTimer(ScaleTHandle, this, &ANetActor::ChangeScale, 1.f, true);
 }
 
 void ANetActor::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -28,6 +36,8 @@ void ANetActor::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutL
 	// Replicate 할 변수들 등록
 	// #include "Net/UnrealNetwork.h"
 	DOREPLIFETIME(ANetActor, RotYaw);
+	DOREPLIFETIME(ANetActor, MColor);
+	
 	
 }
 
@@ -102,9 +112,41 @@ void ANetActor::Rotate()
 	}
 	else    // Client
 	{
-		FRotator rot = GetActorRotation();
-		rot.Yaw = RotYaw;
-		SetActorRotation(rot);
+		OnRep_Rotate();
 	}
+}
+
+void ANetActor::ChangeColor()
+{
+	if (HasAuthority() == false) return;
+	MColor = FLinearColor::MakeRandomColor();	// Random Color
+	OnRep_Color();
+}
+
+void ANetActor::ChangeScale()
+{
+	if (GetOwner() != GetWorld()->GetFirstPlayerController()->GetPawn()) return;
+	// 서버에 Scale 변경 요청
+	ServerRPC_Scale();
+}
+
+void ANetActor::OnRep_Rotate()
+{
+	FRotator rot = GetActorRotation();
+	rot.Yaw = RotYaw;
+	SetActorRotation(rot);
+}
+
+void ANetActor::OnRep_Color()
+{
+	if (Material == nullptr) return;
+	Material->SetVectorParameterValue(TEXT("FloorColor"), MColor);	// Apply Material
+}
+
+void ANetActor::ServerRPC_Scale_Implementation()
+{
+	// Random Scale pick
+	float rand = FMath::RandRange(0.5f, 2.0f);
+	SetActorScale3D(FVector(rand));
 }
 

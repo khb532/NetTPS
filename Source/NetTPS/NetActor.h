@@ -28,6 +28,21 @@ private:
 
 	void Rotate();
 
+	void ChangeColor();
+
+	void ChangeScale();
+
+	UFUNCTION()
+	void OnRep_Rotate();
+
+	UFUNCTION()	// MColor 변경시 호출
+	void OnRep_Color();
+
+	// Request to Server
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_Scale();
+	
+
 public:
 
 	UPROPERTY(EditAnywhere)
@@ -37,7 +52,14 @@ public:
 	float FindDistance = 300.f;
 
 	// 회전값 동기화용
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing=OnRep_Rotate)
 	float RotYaw;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* Material;
+
+	// Material Color Sync Var
+	UPROPERTY(ReplicatedUsing=OnRep_Color)
+	FLinearColor MColor;
 
 };
