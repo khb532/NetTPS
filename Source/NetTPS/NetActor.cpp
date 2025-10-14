@@ -143,10 +143,26 @@ void ANetActor::OnRep_Color()
 	Material->SetVectorParameterValue(TEXT("FloorColor"), MColor);	// Apply Material
 }
 
+void ANetActor::MulticastRPC_Scale_Implementation(float Scale)
+{
+	SetActorScale3D(FVector(Scale));
+}
+
+
+void ANetActor::ClientRPC_Scale_Implementation(float Scale)
+{
+	SetActorScale3D(FVector(Scale));;
+}
+
+
 void ANetActor::ServerRPC_Scale_Implementation()
 {
 	// Random Scale pick
 	float rand = FMath::RandRange(0.5f, 2.0f);
-	SetActorScale3D(FVector(rand));
+	
+	// ClientRPC_Scale(rand);
+	
+	// All Client Change Scale
+	MulticastRPC_Scale(rand);
 }
 

@@ -41,6 +41,13 @@ private:
 	// Request to Server
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_Scale();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_Scale(float Scale);
+
+	// All Client Req
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_Scale(float Scale);
 	
 
 public:
