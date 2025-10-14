@@ -76,6 +76,7 @@ void ANetPlayer::Tick(float DeltaSeconds)
 		
 	}
 	BillboardHpbar();
+	PrintNetLog();
 }
 
 void ANetPlayer::AttachGun()
@@ -174,6 +175,31 @@ void ANetPlayer::BillboardHpbar()
 	FRotator rot = UKismetMathLibrary::MakeRotFromXZ(-Camera->GetActorForwardVector(), Camera->GetActorUpVector());
 	// CompHp의 회전 적용
 	CompHp->SetWorldRotation(rot);
+}
+
+void ANetPlayer::PrintNetLog()
+{
+	// NetConnection State
+	FString ConnectionString = GetNetConnection() != nullptr ? TEXT("Valid Connection") : TEXT("Invalid Connection");
+
+	// Owner State
+	FString OwnerName = GetOwner() != nullptr ? GetOwner()->GetActorNameOrLabel() : TEXT("Invalid Owner");
+
+	// Possessing State
+	FString Possessing = IsLocallyControlled() ? TEXT("Valid Possessing") : TEXT("Invalid Possessing");
+
+	// Role
+	FString RoleString = FString::Printf(TEXT("Local : %s, Remote : %s"),
+		*UEnum::GetValueAsString<ENetRole>(GetLocalRole()),
+		*UEnum::GetValueAsString<ENetRole>(GetRemoteRole()));
+	
+
+	FString LogString = FString::Printf(TEXT("Connection : %s\r\nOwner : %s\r\nMine : %s\r\nRole : %s"),
+		*ConnectionString,
+		*OwnerName,
+		*Possessing,
+		*RoleString);
+	DrawDebugString(GetWorld(), GetActorLocation(), LogString, nullptr, FColor::Yellow, 0);
 }
 
 void ANetPlayer::OnReloadComplete()

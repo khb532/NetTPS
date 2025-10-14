@@ -51,6 +51,8 @@ private:
 	void DamageProcess(float damage);
 	void BillboardHpbar();
 
+	void PrintNetLog();
+
 
 /*Field*/
 public:
