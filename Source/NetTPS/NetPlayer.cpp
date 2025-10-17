@@ -5,6 +5,7 @@
 #include "HPBar.h"
 #include "Blueprint/UserWidget.h"
 #include "MainWidget.h"
+#include "NetGameState.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,8 +13,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 ANetPlayer::ANetPlayer()
 {
@@ -23,6 +26,7 @@ ANetPlayer::ANetPlayer()
 
 	CompHp = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP"));
 	CompHp->SetupAttachment(RootComponent);
+	
 }
 
 void ANetPlayer::BeginPlay()
@@ -33,12 +37,17 @@ void ANetPlayer::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGun::StaticClass(), AllGun);
 
 	CameraBoom->SetRelativeLocation(CameraBoomLocationWithoutGun);
-	
-	// MainUI 생성
-	MainUI = CreateWidget<UMainWidget>(GetWorld(), MainWidget);
-	MainUI->AddToViewport();
-	MainUI->ShowCrosshair(false);
 
+	// if Server
+	if (HasAuthority())
+	{
+		// GameState Load
+		ANetGameState* GSB = Cast<ANetGameState>(GetWorld()->GetGameState());
+		if (GSB != nullptr)
+		{
+			GSB->AddPlayer(this);
+		}
+	}
 }
 
 void ANetPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -59,28 +68,65 @@ void ANetPlayer::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// 누르고 있을 때
-	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(EKeys::J))
+	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(EKeys::One))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("J 키 누르고있음"));
+		UE_LOG(LogTemp, Warning, TEXT("1번키 누르고있음"));
 	}
 	// 눌렀을 때
-	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustPressed(EKeys::J))
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustPressed(EKeys::One))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("J 키 눌렀었음"));
-		
+		MakeCube();		
 	}
 	// 떼었을 때
-	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustReleased(EKeys::J))
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustReleased(EKeys::One))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("J 키 뗐음"));
+		UE_LOG(LogTemp, Warning, TEXT("1번키 떼었음"));
 		
 	}
 	BillboardHpbar();
 	PrintNetLog();
 }
 
+void ANetPlayer::MakeCube()
+{
+	if (!bCanMakeCube) return;
+	// if Not LocalPlayer return
+	if (!IsLocallyControlled()) return;
+	
+	ServerRPC_MakeCube();	
+}
+
+void ANetPlayer::ServerRPC_MakeCube_Implementation()
+{
+	GetWorld()->SpawnActor<AActor>(CubeFactory, GetActorLocation() + GetActorForwardVector() * 300.f, GetActorRotation());
+
+	ANetGameState* GSB = Cast<ANetGameState>(GetWorld()->GetGameState());
+	if (GSB != nullptr)
+		GSB->ChangeTurn();
+}
+
+void ANetPlayer::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Replicate Var
+	DOREPLIFETIME(ANetPlayer, OwnGun);
+	DOREPLIFETIME(ANetPlayer, bCanMakeCube);
+}
+
+void ANetPlayer::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	FString isServer = HasAuthority() ? TEXT("Server") : TEXT("Client");
+	UE_LOG(LogTemp, Warning, TEXT("%s - %s - %s"), *isServer, TEXT(__FUNCTION__), *GetActorNameOrLabel());
+
+	ClientRPC_OnPossess();
+}
+
 void ANetPlayer::AttachGun()
 {
+	if (OwnGun == nullptr) return;
 	// physics Off
 	// Attach to GunComp
 	UStaticMeshComponent* mesh = OwnGun->GetComponentByClass<UStaticMeshComponent>();
@@ -91,11 +137,14 @@ void ANetPlayer::AttachGun()
 
 	ChangeCameraBoomSetting();
 
-	// 총알 UI를 잔탄량만큼 채우기
-	MainUI->AddBullet(OwnGun->GetBulletCount());
+	if (IsLocallyControlled())
+	{
+		// 총알 UI를 잔탄량만큼 채우기
+		MainUI->AddBullet(OwnGun->GetBulletCount());
 
-	// crosshair on
-	MainUI->ShowCrosshair(true);
+		// crosshair on
+		MainUI->ShowCrosshair(true);
+	}
 }
 
 void ANetPlayer::DettachGun(AGun* ptr)
@@ -108,63 +157,81 @@ void ANetPlayer::DettachGun(AGun* ptr)
 
 	ChangeCameraBoomSetting();
 
-	// 총알UI 전체삭제
-	MainUI->PopAllBullet();
-
-	// crosshair off
-	MainUI->ShowCrosshair(false);
-
 	OnFireComplete();
+	// 만약에 내 Player 라면
+	if (IsLocallyControlled())
+	{
+		// 총알 UI 모두 지우자
+		MainUI->PopAllBullet();
+		// Crosshair 비활성
+		MainUI->ShowCrosshair(false);
+	}
+}
+
+void ANetPlayer::DieProcess()
+{
+	// 움직이지 못하게 설정
+	GetCharacterMovement()->DisableMovement();
+	// 충돌되지 않게 설정
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	// 만약에 내 Player 라면
+	if (IsLocallyControlled())
+	{
+		// 총을 들고 있다면 총 놓자.
+		if (hasGun) TakeGun();
+		// 화면 흑백 처리
+		FollowCamera->PostProcessSettings.ColorSaturation = FVector4(0, 0, 0, 1);
+		// 다시하기 버튼 보이게
+		MainUI->ShowBtnRetry();
+		// 마우스 보이게
+		GetWorld()->GetFirstPlayerController()->SetShowMouseCursor(true);
+	}
+}
+
+void ANetPlayer::ClientRPC_OnPossess_Implementation()
+{
+	// MainUI 생성
+	MainUI = CreateWidget<UMainWidget>(GetWorld(), MainWidget);
+	MainUI->AddToViewport();
+	CompHp->SetVisibility(false);
+
+	FString isServer = HasAuthority() ? TEXT("Server") : TEXT("Client");
+	UE_LOG(LogTemp, Warning, TEXT("%s - %s - %s"), *isServer, TEXT(__FUNCTION__), *GetActorNameOrLabel());
 }
 
 void ANetPlayer::Fire()
 {
-	if (!hasGun) return;
-	if (bReloading) return;
-	// 총알이 없으면 탈출
-	if (OwnGun->GetBulletCount() <= 0) return;
-
-	// 공격중
-	if (isFire)
-	{
-		// Combo 연결
-		isCombo = true;
-	}
-	else    // 첫 공격
-	{
-		isFire = true;
-		// 공격 실행
-		FiringAction();
-	}
+	ServerRPC_Fire();
 }
 
 void ANetPlayer::Reload()
 {
-	if (!hasGun) return;
-	if (OwnGun->IsFillBullet()) return;
-	if (bReloading) return;
-	if (isFire) return;
-	bReloading = true;
-	// Reload Anim Play
-	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Reload")));
-
-	
+	ServerRPC_Reload();
 }
 
 void ANetPlayer::DamageProcess(float damage)
 {
-	// 내가 컨트롤하지 않는 캐릭터만
-	// 머리위의 HP bar
-	UHPBar* hpbar = Cast<UHPBar>(CompHp->GetWidget());
-	// 머리위의 HP bar 갱신
-	float CurHp = hpbar->UpdateHP(damage);
-
-	// 내가 컨트롤중인 Player만
-	// MainUI의 HPbar 갱신
-	MainUI->HpBarUI->UpdateHP(damage);
-
-	// 사망 여부 설정
-	isDead = CurHp <= 0;
+	if (IsLocallyControlled())
+	{
+		MainUI->ShowDamageUI();
+	}
+	
+	// 내 Player 라면 mainUI 에 있는 HPBar 를 설정
+	// 그렇지 않으면 compHP 에 있는 HPBar 를 설정
+	UHPBar* hpBar = IsLocallyControlled() ? MainUI->HpBarUI : Cast<UHPBar>(CompHp->GetWidget());
+	
+	// 머리 위에 있는 HPBar 갱신
+	float currHP = hpBar->UpdateHP(damage);
+	// 내가 컨트롤 하고 있는 Player
+	
+	// 죽었는지 여부 설정
+	bIsDead = currHP <= 0;
+	if (bIsDead)
+	{
+		// Controller UnPossess Test
+		DieProcess();
+	}
 }
 
 void ANetPlayer::BillboardHpbar()
@@ -206,63 +273,30 @@ void ANetPlayer::OnReloadComplete()
 {
 	bReloading = false;
 	OwnGun->FillBullet();
-	UE_LOG(LogTemp, Warning, TEXT("Reload"));
-	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
 
-	// 총알UI 가득 채우기
-	MainUI->AddBullet(OwnGun->GetBulletCount());
+	if (IsLocallyControlled())
+	{
+		// 총알UI 가득 채우기
+		MainUI->AddBullet(OwnGun->GetBulletCount());
+	}
 }
 
 void ANetPlayer::FiringAction()
 {
-	// Fire Anim Play
-	FString FireName = FString::Printf(TEXT("Fire_%d"), ComboCount);
-	PlayAnimMontage(PlayerMontage, 1, FName(FireName));
-
-	OwnGun->PopBullet();
-	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
-
-	MainUI->PopBullet();
-
-	////////* 탄착지점 이펙트 출력 *////////
-	// 시작지점
-	FVector StartPos = FollowCamera->GetComponentLocation();
-	// 종료지점
-	FVector EndPos = StartPos + FollowCamera->GetForwardVector() * 10000;
-
+	
+	// 시작 지점
+	FVector startPos = FollowCamera->GetComponentLocation();
+	// 종료 지점
+	FVector endPos = startPos + FollowCamera->GetForwardVector() * 100000;
+	// 예외 옵션
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
-
-	// 충돌시 정보 수신
-	FHitResult HitResult;
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartPos, EndPos, ECC_Visibility, params);
-
-	if (bHit)
-	{
-		// UKismetMathLibrary::GetReflectionVector();
-		// 입사각
-		FVector InVector = EndPos - StartPos;
-		// 법선(노말)
-		FVector NormalVector = HitResult.Normal;
-		// 반사각 (Rotation)
-		float Dot = FVector::DotProduct(InVector, NormalVector);
-		FVector OutVector = InVector - 2 * Dot * NormalVector;
-		FRotator Rot = UKismetMathLibrary::MakeRotFromX(OutVector);
-		
-		// 맞은지점 파티클 효과 생성
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, HitResult.Location, Rot);
-
-		// 만약 맞은 Actor가 NetPlayer라면
-		if ( auto Player = Cast<ANetPlayer>(HitResult.GetActor()) )
-		{
-			// 데미지 처리 하자.
-			Player->DamageProcess(20);
-
-			// DamgeUI on
-			MainUI->ShowDamageUI();
-		}
-	}
+	// 부딪혔을 때 그 정보를 담을 변수
+	FHitResult hitInfo;
+	// LineTrace 실행
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startPos, endPos, ECC_Visibility, params);
+	// 모든 [클라] 에게 LineTrace 결과 넘겨서 총쏘게 하자
+	MulticastRPC_FiringAction(bHit, hitInfo, ComboCount);
 }
 
 void ANetPlayer::OnCombo()
@@ -286,6 +320,23 @@ void ANetPlayer::OnFireComplete()
 	ComboCount = 0;
 }
 
+void ANetPlayer::ServerRPC_Reload_Implementation()
+{
+	if (!hasGun) return;
+	if (OwnGun->IsFillBullet()) return;
+	if (bReloading) return;
+	if (isFire) return;
+	
+	MulticastRPC_Reload();
+}
+
+void ANetPlayer::MulticastRPC_Reload_Implementation()
+{
+	bReloading = true;
+	// Reload Anim Play
+	PlayAnimMontage(PlayerMontage, 1, FName(TEXT("Reload")));
+}
+
 void ANetPlayer::ChangeCameraBoomSetting()
 {
 	GetCharacterMovement()->bOrientRotationToMovement = !hasGun;
@@ -297,8 +348,80 @@ void ANetPlayer::ChangeCameraBoomSetting()
 
 void ANetPlayer::TakeGun()
 {
+	// Request to Server
+	ServerRPC_TakeGun();
+}
+
+void ANetPlayer::MulticastRPC_FiringAction_Implementation(bool bHit, FHitResult hitInfo, int32 combo)
+{
+	// Fire Anim Play
+	FString FireName = FString::Printf(TEXT("Fire_%d"), ComboCount);
+	PlayAnimMontage(PlayerMontage, 1, FName(FireName));
+
+	if (OwnGun != nullptr)
+		OwnGun->PopBullet();
+	UE_LOG(LogTemp, Warning, TEXT("현재 잔탄 : %d"), OwnGun->GetBulletCount());
+	if (MainUI != nullptr)
+		MainUI->PopBullet();
+
+	if (bHit)
+	{
+		// UKismetMathLibrary::GetReflectionVector()
+		// 입사각
+		FVector inVector = hitInfo.TraceEnd - hitInfo.TraceStart;
+		// 법선벡터 (노멀벡터)
+		FVector normalVector = hitInfo.Normal;
+		// 반사각 계산
+		float dot = FVector::DotProduct(inVector, normalVector);
+		FVector outVector = inVector - 2 * dot * normalVector;
+		// 반사각으로 파티클 효과가 재생되게 각도 구하자.
+		FRotator rot = UKismetMathLibrary::MakeRotFromX(outVector);
+		
+		// 맞은 지점에 파티클 효과 표현
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, hitInfo.Location, rot);
+
+		// 만약 맞은 Actor 가 NetPlayer 라면
+		if (ANetPlayer* player = Cast<ANetPlayer>(hitInfo.GetActor()))
+		{
+			// 데미지 처리 하자.
+			player->DamageProcess(20);
+		}
+	}
+
+}
+
+void ANetPlayer::ServerRPC_Fire_Implementation()
+{
+	if (!hasGun) return;
+	if (bReloading) return;
+	// 총알이 없으면 탈출
+	if (OwnGun->GetBulletCount() <= 0) return;
+
+	// 공격중
+	if (isFire)
+	{
+		// Combo 연결
+		isCombo = true;
+	}
+	else    // 첫 공격
+	{
+		isFire = true;
+		// 공격 실행
+		FiringAction();
+	}
+}
+
+void ANetPlayer::MulticastRPC_DetachGun_Implementation(class AGun* gun)
+{
+	DettachGun(gun);
+}
+
+void ANetPlayer::ServerRPC_TakeGun_Implementation()
+{
 	if (!hasGun)
 	{
+		// Dead
+		if (bIsDead) return;
 		// 나와 가장 가까운 총의 이름을 출력
 		closeidx = -1;
 		// 현재 가장 가까운 거리
@@ -306,6 +429,9 @@ void ANetPlayer::TakeGun()
 	
 		for (int32 i = 0; i < AllGun.Num(); i++)
 		{
+			// Already Owend Gun
+			if ( AllGun[i]->GetOwner() != nullptr ) continue;
+			
 			// 현재 인덱스의 거리
 			float dist = FVector::Dist(AllGun[i]->GetActorLocation(), GetActorLocation());
 
@@ -322,6 +448,7 @@ void ANetPlayer::TakeGun()
 		if (closeidx != -1)
 		{
 			OwnGun = Cast<AGun>(AllGun[closeidx]);
+			OwnGun->SetOwner(this);
 			AttachGun();
 		}
 	}
@@ -330,10 +457,14 @@ void ANetPlayer::TakeGun()
 	{
 		// swap
 		AGun* tmp = OwnGun;
+		// OwnGun, Owner off
+		OwnGun->SetOwner(nullptr);
+		
 		OwnGun = nullptr;
-		DettachGun(tmp);
+		
+		// All Client Detach gun
+		MulticastRPC_DetachGun(tmp);
 	}
-
 }
 
 

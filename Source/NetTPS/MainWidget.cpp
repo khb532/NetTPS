@@ -1,7 +1,21 @@
 #include "MainWidget.h"
 
+#include "NetTPSCharacter.h"
+#include "NetTPSPlayerController.h"
+#include "Components/Button.h"
 #include "Components/HorizontalBox.h"
 #include "Components/Image.h"
+
+void UMainWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// UPROPERTY 에서 meta = (BindWidget) 을 생성자에서
+	BtnRetry = Cast<UButton>(GetWidgetFromName(TEXT("Btn_Retry")));
+
+	// Btn_Retry On Clicked Callback
+	BtnRetry->OnClicked.AddDynamic(this/*현재클래스위치의*/, &UMainWidget::OnRetry);
+}
 
 void UMainWidget::AddBullet(int32 cnt)
 {
@@ -47,6 +61,26 @@ void UMainWidget::ShowDamageUI()
 	DamageOpacity = 1;
 }
 
+void UMainWidget::OnRetry()
+{
+	// Observer Mode
+	ANetTPSPlayerController* pc = Cast<ANetTPSPlayerController>(GetWorld()->GetFirstPlayerController());
+
+	// To SERVER : Change Spectator Req
+	pc->ServerRPC_ChangeToSpectator();
+
+	pc->SetShowMouseCursor(false);
+
+	// MainUI Remove
+	RemoveFromParent();
+}
+
+void UMainWidget::ShowBtnRetry()
+{
+	// Show Button
+	BtnRetry->SetVisibility(ESlateVisibility::Visible);
+}
+
 void UMainWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
@@ -62,5 +96,6 @@ void UMainWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		DamageUI->SetRenderOpacity(DamageOpacity);
 	}
 }
+
 
 

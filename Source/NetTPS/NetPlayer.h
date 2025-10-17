@@ -12,11 +12,28 @@ class NETTPS_API ANetPlayer : public ANetTPSCharacter
 
 /* Method */
 public:
-	// 생성자
 	ANetPlayer();
 	
 	// 총 집기&놓기 함수
 	void TakeGun();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_TakeGun();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_DetachGun(class AGun* gun);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_Fire();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_FiringAction(bool bHit, FHitResult hitInfo, int32 combo);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_Reload();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_Reload();
 
 	UFUNCTION(BlueprintCallable)
 	bool GetHasGun(){ return hasGun;}
@@ -32,25 +49,35 @@ public:
 
 	// 공격 마무리 (콤보끊김 & 마지막공격)
 	void OnFireComplete();
+
+	// 총 탈부착
+	UFUNCTION()
+	void AttachGun();
+	void DettachGun(class AGun* ptr);
+
+	void DieProcess();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_OnPossess();
+
+	void MakeCube();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_MakeCube();
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
-	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PossessedBy(AController* NewController) override;
 	
 private:
-	// 총 탈부착
-	void AttachGun();
-	void DettachGun(class AGun* ptr);
-
 	// Fire & Reload
 	void Fire();
 	void Reload();
-
 	void DamageProcess(float damage);
 	void BillboardHpbar();
-
 	void PrintNetLog();
 
 
@@ -92,6 +119,9 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UWidgetComponent* CompHp;
+
+	UPROPERTY(Replicated)
+	bool bCanMakeCube;
 	
 	// 사망
 	bool isDead;
@@ -103,13 +133,18 @@ public:
 	// 콤보 카운트
 	int32 ComboCount;
 	
+	bool bIsDead = false;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AActor> CubeFactory;
+
 protected:
 	
 private:
 	// 가까운 총의 인덱스
 	int32 closeidx = -1;
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing=AttachGun)
 	class AGun* OwnGun;
 
 	// 총을 갖고있는지 여부

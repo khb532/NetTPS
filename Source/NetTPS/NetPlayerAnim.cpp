@@ -40,7 +40,7 @@ void UNetPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 		PitchAngle = isArmed ? -PawnOwner->GetBaseAimRotation().Pitch : 0;
 		YawAngle = isArmed ? 20 : 0;
 
-		isDie = PawnOwner->isDead;
+		isDie = PawnOwner->bIsDead;
 	}
 
 }

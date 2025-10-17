@@ -41,4 +41,10 @@ protected:
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
 
+public:
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ChangeToSpectator();
+
+	// Respawn
+	void Respawn();
 };

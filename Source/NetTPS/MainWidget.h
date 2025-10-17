@@ -12,6 +12,8 @@ class NETTPS_API UMainWidget : public UUserWidget
 
 /* Method */
 public:
+	virtual void NativeConstruct() override;
+	
 	// 총알 UI를 현재 총알수 만큼 추가
 	void AddBullet(int32 cnt);
 
@@ -26,9 +28,16 @@ public:
 
 	// DamageUI on/off
 	void ShowDamageUI();
+
+	UFUNCTION()
+	void OnRetry();
+
+	UFUNCTION()
+	void ShowBtnRetry();
 	
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
 
 private:
 	
@@ -49,6 +58,9 @@ public:
 
 	UPROPERTY(meta=(BindWidget))
 	class UImage* DamageUI;
+
+	UPROPERTY()
+	class UButton* BtnRetry;
 
 protected:
 	

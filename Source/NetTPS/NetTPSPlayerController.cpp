@@ -7,6 +7,8 @@
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "NetTPS.h"
+#include "GameFramework/GameModeBase.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 void ANetTPSPlayerController::BeginPlay()
@@ -27,7 +29,6 @@ void ANetTPSPlayerController::BeginPlay()
 		} else {
 
 			UE_LOG(LogNetTPS, Error, TEXT("Could not spawn mobile controls widget."));
-
 		}
 
 	}
@@ -58,4 +59,40 @@ void ANetTPSPlayerController::SetupInputComponent()
 			}
 		}
 	}
+}
+
+void ANetTPSPlayerController::Respawn()
+{
+	// 현재 Possess Pawn
+	APawn * pawn = GetPawn();
+	// GameMode
+	AGameModeBase * gm = GetWorld()->GetAuthGameMode();
+
+	UnPossess();
+
+	// Spectator Pawn Destroy
+	pawn->Destroy();
+
+	// 다시 Default Pawn Spawn, Possess
+	gm->RestartPlayer(this);
+}
+
+void ANetTPSPlayerController::ServerRPC_ChangeToSpectator_Implementation()
+{
+	// 현재 Possess Pawn
+	APawn * pawn = GetPawn();
+	// GameMode
+	AGameModeBase * gm = GetWorld()->GetAuthGameMode();
+
+	UnPossess();
+	
+	// Spectator Pawn Spawn
+	ASpectatorPawn * spectator = GetWorld()->SpawnActor<ASpectatorPawn>(gm->SpectatorClass, pawn->GetTransform());
+	// Spawned Spectator Possess
+	Possess(spectator);
+	// NetPlayer Destroy
+	pawn->Destroy();
+
+	FTimerHandle RespawnTimer;
+	GetWorldTimerManager().SetTimer(RespawnTimer, this, &ANetTPSPlayerController::Respawn, 5, false);
 }
