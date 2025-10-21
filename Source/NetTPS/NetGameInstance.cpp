@@ -16,11 +16,14 @@ void UNetGameInstance::Init()
 		// Subsystem의 Interface 로드
 		SessionInterface = Subsystem->GetSessionInterface();
 
-		// 세션 생성 성공시 호출될 함수 등록
+		// 세션 생성 성공시 호출 함수 등록
 		SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UNetGameInstance::OnCreateSessionComplete);
 
-		// 세션 조회 성공시 호출될 함수 등록
+		// 세션 조회 성공시 호출 함수 등록
 		SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UNetGameInstance::OnFindSessionComplete);
+
+		// 세션 참여 성공시 호출 함수 등록
+		SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UNetGameInstance::OnJoinSessionComplete);
 	}
 }
 
@@ -63,6 +66,7 @@ void UNetGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 	if (bWasSuccessful)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 성공"), *SessionName.ToString());
+		GetWorld()->ServerTravel(TEXT("/Game/ThirdPerson/Lvl_ThirdPerson?Listen"));
 	}
 	else
 	{
@@ -119,4 +123,37 @@ void UNetGameInstance::OnFindSessionComplete(bool bWasSuccessful)
 		
 	}
 	
+}
+
+void UNetGameInstance::JoinOtherSession(int32 SessionIdx)
+{
+	// 검색된 세션 목록
+	TArray<FOnlineSessionSearchResult> Results = SessionSearch->SearchResults;
+
+	// 5.5 이후 변경됨 : 반드시 세팅 명시해야함
+	Results[SessionIdx].Session.SessionSettings.bUseLobbiesIfAvailable = true;
+	Results[SessionIdx].Session.SessionSettings.bUsesPresence = true;
+
+	// 세션 이름 로드
+	FString DisplayName;
+	Results[SessionIdx].Session.SessionSettings.Get(FName(TEXT("DP_NAME")), DisplayName);
+	
+	// 세션 참여
+	SessionInterface->JoinSession(0, FName(DisplayName), Results[SessionIdx]);
+	
+}
+
+void UNetGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if ( Result == EOnJoinSessionCompleteResult::Success )
+	{
+		// 서버가 만든 세션 URL 로드
+		FString URL;
+		SessionInterface->GetResolvedConnectString(SessionName, URL);
+		UE_LOG(LogTemp, Warning, TEXT("URL : %s"), *URL)
+
+		// 서버가 있는 맵으로 이동
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		PC->ClientTravel(URL, TRAVEL_Absolute);
+	}
 }
