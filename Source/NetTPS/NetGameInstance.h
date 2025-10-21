@@ -30,6 +30,11 @@ public:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 
 	// 세션 조회
-	
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+
+	UFUNCTION(BlueprintCallable)
+	void FindOtherSession();
+
+	void OnFindSessionComplete(bool bWasSuccessful);
 	
 };

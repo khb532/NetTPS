@@ -2,6 +2,7 @@
 #include "OnlineSubsystem.h"		// IOnlineSubsystem*
 #include "OnlineSubsystemUtils.h"	// Online::
 #include "OnlineSessionSettings.h"
+#include "Online/OnlineSessionNames.h"
 
 void UNetGameInstance::Init()
 {
@@ -17,6 +18,9 @@ void UNetGameInstance::Init()
 
 		// 세션 생성 성공시 호출될 함수 등록
 		SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UNetGameInstance::OnCreateSessionComplete);
+
+		// 세션 조회 성공시 호출될 함수 등록
+		SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UNetGameInstance::OnFindSessionComplete);
 	}
 }
 
@@ -64,4 +68,55 @@ void UNetGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 실패"), *SessionName.ToString());
 	}
+}
+
+void UNetGameInstance::FindOtherSession()
+{
+	UE_LOG(LogTemp, Warning, TEXT("세션 조회 시작"))
+
+	// session search
+	SessionSearch = MakeShared<FOnlineSessionSearch>();
+
+	// 현재 사용중인 서브시스템 이름
+	FName SubsysName = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+
+	// 서브시스템 이름이 Null이면 Lan이용
+	SessionSearch->bIsLanQuery = SubsysName.IsEqual(FName(TEXT("NULL")));
+
+	SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+	// SessionSearch->QuerySettings.Set(FName("DP_NAME"), FName("Wanted"), EOnlineComparisonOp::Equals);
+
+	// 검색 횟수
+	SessionSearch->MaxSearchResults = 100;
+
+	// 세션 검색
+	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+
+	
+}
+
+void UNetGameInstance::OnFindSessionComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("세션 조회 끝"))
+
+	if (bWasSuccessful)
+	{
+		// 검색된 세션 결과들
+		TArray<FOnlineSessionSearchResult> Results = SessionSearch->SearchResults;
+
+		for (int32 i = 0; i < Results.Num(); i++)
+		{
+			// 세션 이름
+			FString DisplayName;
+
+			Results[i].Session.SessionSettings.Get(FName("DP_NAME"), DisplayName);
+			UE_LOG(LogTemp, Warning, TEXT("Session - %i, Name : %s"), i, *DisplayName)
+		}
+	}
+	else
+	{
+
+		
+	}
+	
 }

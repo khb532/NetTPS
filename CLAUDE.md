@@ -2,6 +2,8 @@
 
 이 파일은 Claude Code(claude.ai/code)가 이 저장소에서 작업할 때 참고할 가이드를 제공합니다.
 
+**언어**: Claude Code는 모든 응답을 한국어로 제공해야 합니다.
+
 ## 프로젝트 개요
 
 NetTPS는 **Unreal Engine 5.6** 기반 멀티플레이어 TPS 프로젝트로, 여러 게임 시스템 변형을 포함합니다:
