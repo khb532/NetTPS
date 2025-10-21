@@ -19,7 +19,9 @@ public class NetTPS : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"Niagara"
+			"Niagara",
+			"OnlineSubsystem",
+			"OnlineSubsystemSteam"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });

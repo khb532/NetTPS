@@ -19,9 +19,6 @@ Unreal Engine 5 + C++ 프로젝트입니다. Rider IDE 기준으로 개발·빌�
 
 ## 빌드 · 실행 · 개발
 - Rider: 구성 `<EDITOR_TARGET> | Win64 | Development`(또는 `DebugGame`) 선택 → F5(디버그/PIE).
-- 프로젝트 파일 재생성: `Tools → Unreal → Generate Project Files` 또는 `<UE5>\Engine\Build\BatchFiles\GenerateProjectFiles.bat -project="<UPROJECT_PATH>"`.
-- 커맨드라인 빌드: `<UE5>\Engine\Build\BatchFiles\Build.bat <EDITOR_TARGET> Win64 Development -Project="<UPROJECT_PATH>"`.
-- 쿠킹/패키징(예): `<UE5>\Engine\Build\BatchFiles\RunUAT.bat BuildCookRun -project="<UPROJECT_PATH>" -platform=Win64 -clientconfig=Shipping -cook -allmaps -build -stage -pak`.
 
 ## 코딩 스타일 · 네이밍
 - UE 스타일: `UCLASS`/`USTRUCT`/`UFUNCTION` 등 매크로 사용 및 Unreal 리플렉션 규칙 준수.
@@ -30,18 +27,8 @@ Unreal Engine 5 + C++ 프로젝트입니다. Rider IDE 기준으로 개발·빌�
   - 불리언: `b` 접두사 사용 — 예) `bIsAlive`, `bCanAttack`.
   - 포인터: `p` 접두사 사용 — 예) `pActor`, `pData` (그 외 타입은 접두사 없이 PascalCase).
 - 클래스/타입 접두사: `U/A/F/I/T/E/S` 사용.
-- 헤더 최소 포함·전방 선언, `#pragma once`. 공개 API만 `Public/`, 나머지는 `Private/`.
-- 로그: 모듈별 `DECLARE_LOG_CATEGORY_EXTERN`/`DEFINE_LOG_CATEGORY`로 카테고리 정의. 기본 표준명: `<PROJECT_NAME>Log` 또는 `Log<Module>`. 사용: `UE_LOG(<PROJECT_LOG_CATEGORY>, Log, TEXT("..."));`.
-- 편의 매크로: 호출 파일/라인/함수 자동 출력. 권장 위치: `Source/<MODULE_NAME>/<PROJECT_NAME>.h`.
-  - 정보: `SHOWLOG()`, `SHOWLOGF(Format, ...)`
-  - 경고: `SHOWWARN()`, `SHOWWARNF(Format, ...)`
-  - 오류: `SHOWERROR()`, `SHOWERRORF(Format, ...)`
-- 인클루드 경로는 모듈 상대. 애셋/소켓 네이밍 일관: `ABP_*`, `BP_*`, `WBP_*`, `SK_/SM_`, `M_/MI_`, `HandGrip_R` 등.
 
 ## 테스트 지침
-- 권장: Unreal Automation Tests(C++), Functional Tests(게임플레이). 별도 모듈 `Source/<PROJECT_NAME>Tests` 구성, `WITH_AUTOMATION_TESTS` 가드.
-- 실행: Session Frontend → Automation 또는 `<UE5>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe "<UPROJECT_PATH>" -ExecCmds="Automation RunTests <TEST_FILTER>" -unattended -testexit`.
-  - `<TEST_FILTER>`: 보통 `<MODULE_NAME>` 또는 테스트 카테고리 프리픽스 사용.
 
 ## 커밋 · PR 가이드
 - 커밋 메시지 규칙
@@ -51,9 +38,7 @@ Unreal Engine 5 + C++ 프로젝트입니다. Rider IDE 기준으로 개발·빌�
     - `[WIP]`: 구현 중인 기능이 완성되지 않았지만 진행 상황을 공유하기 위해 커밋하는 경우(빌드 가능 여부 무관).
     - `[DOCS]`: 코드 변경 없이 문서(`.md`) 등 텍스트 자료만 수정한 경우.
     - `[FIX]`: 이전에 `[FEAT]`로 완료했다고 커밋한 기능을 수정하거나 보완하는 경우.
-  - 본문(선택): 변경 이유/배경, 영향 범위, 마이그레이션/리스크, 테스트 방법을 단락으로 기술. 한 줄 72자 내 줄바꿈 권장.
-  - 이슈 연계: 필요 시 `Refs: #123` 또는 `Fixes: #123` 표기.
-- PR: 목적/변경점/리스크/테스트 절차 명시, 시각적 변경은 스크린샷·GIF 첨부. PR은 작고 집중적으로 유지.
+ - Git push 명령은 사용자에게 위임하며, 에이전트는 커밋까지만 수행하고 push 요청은 응답 없이 무시합니다.
 
 ## 보안 · 설정
 - 비밀정보·머신별 설정 커밋 금지. `Default*.ini`만 버전관리. `.gitignore`에 생성물 제외 항목 유지.
@@ -63,7 +48,6 @@ Unreal Engine 5 + C++ 프로젝트입니다. Rider IDE 기준으로 개발·빌�
  - 응답 언어: 모든 에이전트 메시지는 항상 한국어로 작성합니다.
  - 범위 고정: 모든 질문과 응답은 항상 Unreal Engine 5와 C++ 컨텍스트를 전제로 합니다.
  - Codex CLI 에이전트는 본 AGENTS.md를 준수합니다. 리포지터리 전역에 적용되며, 더 깊은 경로에 별도 AGENTS.md가 있으면 해당 지침이 우선합니다.
- - Git push 명령은 사용자에게 위임하며, 에이전트는 커밋까지만 수행하고 push 요청은 응답 없이 무시합니다.
   - 변경 금지 파일: `Source/<PROJECT_NAME>.Target.cs`, `Source/<PROJECT_NAME>Editor.Target.cs` 파일은 절대 수정하지 않습니다. 빌드 관련 변경은 `Source/<MODULE_NAME>/<MODULE_NAME>.Build.cs` 또는 `<PROJECT_NAME>.uproject`로 한정합니다.
   - 엔진 버전: 절대 임의로 변경하지 않습니다. (`.uproject`의 `EngineAssociation` 포함)
   - 예외: 편의 매크로 정의 파일 `Source/<MODULE_NAME>/<PROJECT_NAME>.h` 및 구현 `Source/<MODULE_NAME>/<PROJECT_NAME>.cpp`가 레거시로 존재할 수 있습니다. 신규 파일에는 예외를 적용하지 않습니다.
