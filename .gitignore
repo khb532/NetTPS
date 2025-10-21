@@ -4,6 +4,9 @@ RiderLink/
 .vscode
 *.code-workspace
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Visual Studio 2015 user specific files
 .vs/
 
