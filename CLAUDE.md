@@ -6,13 +6,15 @@
 
 ## 프로젝트 개요
 
-NetTPS는 **Unreal Engine 5.6** 기반 멀티플레이어 TPS 프로젝트로, 여러 게임 시스템 변형을 포함합니다:
-- **Variant_Combat**: 콤보/차지 공격이 있는 근접 전투와 StateTree AI
-- **Variant_Platforming**: 다단 점프, 벽 점프, 대시 등 고급 이동
-- **Variant_SideScrolling**: 소프트 플랫폼이 있는 2D 플랫포머 메카닉
-- **Base Multiplayer**: 총 전투, 턴 기반 큐브 생성, Steam 로비 연동
+NetTPS는 **Unreal Engine 5.6** 기반 멀티플레이어 TPS 프로젝트입니다:
+- 총 전투 시스템
+- 턴 기반 큐브 생성
+- Steam 로비 연동 (LAN 폴백 지원)
+- 세션 생성/검색/참여 기능
 
 **언어**: 모든 커밋 메시지와 주석은 한국어
+
+**주의**: `Variant_*` 폴더의 코드는 번들 샘플 코드로 직접 관리하지 않습니다.
 
 ## 빌드 & 개발
 
@@ -67,10 +69,10 @@ GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)
 }
 ```
 
-### 캐릭터 시스템 계층
+### 캐릭터 시스템
 
 ```
-ANetTPSCharacter (기본)
+ANetTPSCharacter (기본 캐릭터)
 ├── CameraBoom, FollowCamera
 ├── Enhanced Input: Move, Look, Jump
 └── 메서드: DoMove(), DoLook(), DoJumpStart()
@@ -80,53 +82,19 @@ ANetPlayer (멀티플레이어 총 전투)
 ├── 턴 기반 큐브: MakeCube, bCanMakeCube
 ├── UI: MainWidget (HUD), CompHp (체력바)
 └── 사망/리스폰: 관전자 모드 전환
-
-ACombatCharacter (근접 전투)
-├── 인터페이스: ICombatAttacker, ICombatDamageable
-├── 콤보 시스템: AnimNotify 타이밍을 사용하는 ComboAttackMontage
-├── 차지 공격: 홀드-릴리즈 방식, 차지 루프
-├── 데미지: Sphere trace → KnockbackImpulse + LaunchImpulse
-└── 사망: Ragdoll → RespawnTimer → RespawnCharacter()
-
-APlatformingCharacter (고급 이동)
-├── 다단 점프: 일반 → 더블 → 벽 점프
-├── Coyote time (관대한 점프)
-├── 애니메이션 몽타주가 있는 대시
-└── 트레이스로 벽 감지
-
-ASideScrollingCharacter (2D 플랫포머)
-├── 제한된 이동 (좌/우만)
-├── 소프트 플랫폼 (통과 가능)
-└── 상호작용 시스템 (200cm 반경)
 ```
 
-### 전투 시스템
+### 총 전투 시스템
 
-**콤보 흐름**:
-1. 플레이어가 공격 누름 → `DoComboAttackStart()`
-2. `ComboAttack()`이 `ComboAttackMontage[ComboCount section]` 재생
-3. `AnimNotify_CheckCombo`가 허용 시간 내 입력 캐시 확인
-4. 눌렸으면 `ComboCount` 증가, 아니면 초기화
-5. `AttackMontageEnded` 델리게이트가 상태 초기화
+**발사 흐름**:
+1. 클라이언트가 Fire() 호출
+2. ServerRPC_Fire()로 서버에 요청
+3. 서버가 Line Trace로 히트 검증
+4. MulticastRPC_FiringAction()으로 모든 클라이언트에 재생
 
-**차지 공격 흐름**:
-1. 공격 홀드 → `ChargedAttackPressed()`가 `bIsChargingAttack = true` 설정
-2. `ChargeLoopSection` 재생 (루프 몽타주)
-3. `AnimNotify_CheckChargedAttack`가 홀드하는 동안 루프
-4. 릴리즈 → `ChargedAttackReleased()`가 `ChargeAttackSection`으로 점프
-
-**데미지 적용**:
-```cpp
-DoAttackTrace(FName DamageSourceBone)
-{
-    // 본에서 전방으로 Sphere trace
-    FVector TraceEnd = Start + (Forward * MeleeTraceDistance);
-    SweepMultiByObjectType(..., MeleeTraceRadius);
-
-    // ICombatDamageable 타겟에 데미지 적용
-    Target->ApplyDamage(MeleeDamage, this, ImpactPoint, Impulse);
-}
-```
+**재장전**:
+- Reload() → ServerRPC_Reload() → 애니메이션 재생
+- AnimNotify_OnReloadComplete()에서 탄약 보충
 
 ### 게임 스테이트 & 턴 시스템
 
@@ -143,7 +111,7 @@ DoAttackTrace(FName DamageSourceBone)
 
 ### UI 시스템 (UMG)
 
-**UMainWidget** (`Source/NetTPS/Private/UI/MainWidget.cpp`):
+**UMainWidget** (인게임 HUD):
 ```cpp
 UPROPERTY(meta=(BindWidget))
 UHorizontalBox* MagazineBox;  // 탄약 디스플레이
@@ -154,6 +122,12 @@ PopBullet()                   // 탄약 하나 제거
 ShowCrosshair(bool)           // 조준점 토글
 ShowDamageUI()                // 붉은 데미지 플래시
 ```
+
+**ULobbyWidget** (로비 UI):
+- WidgetSwitcher - 메인/생성/검색 화면 전환
+- EditSessionName - 세션 이름 입력
+- SliderPlayerCount - 플레이어 수 설정
+- SessionSlotBox - 검색된 세션 목록
 
 **위젯 컴포넌트**:
 - `CompHp` - 빌보드 체력바 (캐릭터 위에 추적)
@@ -171,50 +145,44 @@ PitchAngle, YawAngle
 
 // AnimNotify 콜백
 AnimNotify_OnReloadComplete()
-AnimNotify_CheckCombo()
-AnimNotify_DoAttackTrace()
 ```
 
 **몽타주 시스템**:
 - `PlayerMontage` - 발사, 재장전 애니메이션
-- `ComboAttackMontage` - 콤보 단계마다 여러 섹션
-- `ChargedAttackMontage` - 차지 루프 + 공격 섹션
 
 ### 입력 시스템 (Enhanced Input)
 
-**캐릭터별 입력 액션**:
-- **Base**: Move, Look, Jump, MouseLook
-- **NetPlayer**: + TakeGun, Fire, Reload
-- **CombatCharacter**: + ComboAttack, ChargedAttack
-- **PlatformingCharacter**: + Dash
-- **SideScrollingCharacter**: + Interact, Drop
+**입력 액션**:
+- **NetTPSCharacter**: Move, Look, Jump, MouseLook
+- **NetPlayer**: + TakeGun, Fire, Reload, MakeCube
 
 **바인딩 패턴**:
 ```cpp
 UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent);
-EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AClass::Move);
+EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AClass::DoMove);
 ```
 
 ## 프로젝트 구조
 
 ```
 Source/NetTPS/
-├── Public/<Domain>/
-│   ├── Combat/          # CombatCharacter, CombatEnemy, interfaces
-│   ├── Platforming/     # PlatformingCharacter
-│   ├── SideScrolling/   # SideScrollingCharacter
-│   ├── AI/              # CombatAIController, StateTree utilities
-│   ├── Gameplay/        # NetPlayer, NetActor, NetGameState
-│   ├── Interfaces/      # ICombatAttacker, ICombatDamageable
-│   └── UI/              # MainWidget, HPBar
-└── Private/<Domain>/    # Public 구조 미러링
+├── (루트)               # 직접 관리하는 코드
+│   ├── NetTPSCharacter  # 기본 삼인칭 캐릭터
+│   ├── NetPlayer        # 멀티플레이어 캐릭터
+│   ├── NetGameInstance  # 세션 관리
+│   ├── NetGameState     # 게임 스테이트
+│   ├── MainWidget       # 인게임 HUD
+│   ├── LobbyWidget      # 로비 UI
+│   └── ...
+└── Variant_*/           # 번들 샘플 코드 (직접 관리 안 함)
 
 Content/
 ├── Net/                 # 로비/네트워킹 맵
+│   ├── LobbyMap         # 로비 맵
+│   └── UI/              # 로비 위젯 블루프린트
 ├── ThirdPerson/         # 기본 삼인칭 게임플레이
-├── Variant_Combat/      # 전투 시스템 블루프린트
-├── Variant_Platforming/
-├── Variant_SideScrolling/
+│   ├── Lvl_ThirdPerson  # 메인 게임 레벨
+│   └── Blueprints/      # 캐릭터 블루프린트
 ├── Characters/          # 모델, 애니메이션
 ├── Input/               # 입력 액션, 매핑
 └── UI/                  # 위젯 블루프린트
@@ -258,15 +226,14 @@ Config/
 
 ## 주요 파일 참조
 
-**네트워킹 진입점**:
-- `Source/NetTPS/Public/Gameplay/NetGameInstance.h` - 세션 관리
-- `Source/NetTPS/Public/Gameplay/NetPlayer.h` - RPC가 있는 멀티플레이어 캐릭터
-- `Source/NetTPS/Public/Gameplay/NetGameState.h` - 턴 기반 게임 스테이트
+**네트워킹 핵심**:
+- `Source/NetTPS/NetGameInstance.h` - 세션 생성/검색/참여
+- `Source/NetTPS/NetPlayer.h` - 멀티플레이어 캐릭터 (RPC)
+- `Source/NetTPS/NetGameState.h` - 턴 기반 게임 스테이트
 
-**전투 시스템**:
-- `Source/NetTPS/Public/Variant_Combat/CombatCharacter.h` - 근접 전투 아키텍처
-- `Source/NetTPS/Public/Variant_Combat/CombatEnemy.h` - AI 적
-- `Source/NetTPS/Public/Interfaces/ICombatAttacker.h` - 전투 인터페이스
+**UI**:
+- `Source/NetTPS/LobbyWidget.h` - 로비 UI
+- `Source/NetTPS/MainWidget.h` - 인게임 HUD
 
 **설정**:
 - `Config/DefaultEngine.ini` - Steam 연동, 네트워크 드라이버
@@ -295,18 +262,12 @@ FLinearColor MColor;
 void OnRep_Color() { /* 머티리얼 업데이트 */ }
 ```
 
-**AnimNotify → Combat Interface**:
+**위젯 바인딩 (UE5 권장)**:
 ```cpp
-// AnimNotify 안에서
-if (ICombatAttacker* Attacker = Cast<ICombatAttacker>(Character))
-{
-    Attacker->DoAttackTrace(BoneName);
-}
-```
+// ✅ TObjectPtr 사용 (UE5)
+UPROPERTY(meta=(BindWidget))
+TObjectPtr<UButton> Btn_GoCreate;
 
-**델리게이트 패턴**:
-```cpp
-FOnMontageEnded BlendOutDelegate;
-BlendOutDelegate.BindUObject(this, &AClass::OnMontageEnded);
-PlayAnimMontage(Montage, 1.f, StartSection);
+UPROPERTY(meta=(BindWidget))
+TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
 ```

@@ -115,13 +115,15 @@ void UNetGameInstance::OnFindSessionComplete(bool bWasSuccessful)
 
 			Results[i].Session.SessionSettings.Get(FName("DP_NAME"), DisplayName);
 			UE_LOG(LogTemp, Warning, TEXT("Session - %i, Name : %s"), i, *DisplayName)
+
+			OnFindComplete.ExecuteIfBound(i, DisplayName/*Delegate parameters*/);
 		}
 	}
 	else
 	{
-
-		
+		UE_LOG(LogTemp, Error, TEXT("Search FAIL"))
 	}
+	OnFindComplete.ExecuteIfBound(-1/*Complete*/, FString());
 	
 }
 
