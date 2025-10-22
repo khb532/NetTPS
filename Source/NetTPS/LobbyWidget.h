@@ -4,6 +4,14 @@
 #include "Blueprint/UserWidget.h"
 #include "LobbyWidget.generated.h"
 
+class UScrollBox;
+class UTextBlock;
+class USlider;
+class UEditableTextBox;
+class UButton;
+class UWidgetSwitcher;
+class UNetGameInstance;
+
 UCLASS()
 class NETTPS_API ULobbyWidget : public UUserWidget
 {
@@ -53,51 +61,51 @@ private:
 public:
 	// Game Instance
 	UPROPERTY()
-	class UNetGameInstance* GameInstance;
+	TObjectPtr<UNetGameInstance> GameInstance;
 
 	// Widget Switcher
 	UPROPERTY(meta=(BindWidget))
-	class UWidgetSwitcher* WidgetSwitcher;
+	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
 
 	// Main Lobby
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_GoCreate;
+	TObjectPtr<UButton> Btn_GoCreate;
 
 	// Create Session Move Button
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_GoFind;
+	TObjectPtr<UButton> Btn_GoFind;
 	
 	//	Edit Session Name
 	UPROPERTY(meta=(BindWidget))
-	class UEditableTextBox* EditSessionName;
+	TObjectPtr<UEditableTextBox> EditSessionName;
 
 	//	Slider Player Count
 	UPROPERTY(meta=(BindWidget))
-	class USlider* SliderPlayerCount;
+	TObjectPtr<USlider> SliderPlayerCount;
 
 	UPROPERTY(meta=(BindWidget))
-	class UTextBlock* TxtPlayerCount;
+	TObjectPtr<UTextBlock> TxtPlayerCount;
 
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_Create;
+	TObjectPtr<UButton> Btn_Create;
 
 	UPROPERTY(meta=(BindWidget))
-	class UScrollBox* Scroll_SessionList;
+	TObjectPtr<UScrollBox> Scroll_SessionList;
 
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_Find;
+	TObjectPtr<UButton> Btn_Find;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USessionInfoWidget> SessionInfoWidgetClass;
 
 	UPROPERTY(meta=(BindWidget))
-	class UTextBlock* Txt_Find;
+	TObjectPtr<UTextBlock> Txt_Find;
 
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_BackFromCreate;
+	TObjectPtr<UButton> Btn_BackFromCreate;
 	
 	UPROPERTY(meta=(BindWidget))
-	class UButton* Btn_BackFromFind;
+	TObjectPtr<UButton> Btn_BackFromFind;
 	
 protected:
 
