@@ -19,6 +19,7 @@ public class NetTPS : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
+			"SlateCore",
 			"Niagara",
 			"OnlineSubsystem",
 			"OnlineSubsystemSteam"

@@ -12,10 +12,15 @@ class NETTPS_API UGameWidget : public UUserWidget
 
 /* Method */
 public:
+	//	Begin Play
+	virtual void NativeConstruct() override;
+	
 	//	PlayerInfoWidget 추가 함수
 	void AddPlayerInfo(TObjectPtr<class ANetPlayerState> PlayerState);
 
-
+	//	Chat Enter Input Call
+	UFUNCTION()
+	void OnTextboxCommitted(const FText& text, ETextCommit::Type commitMethod);
 
 private:
 
@@ -32,6 +37,17 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<class UVerticalBox> PlayerInfoList;
 
+	//	Scroll Chat Box
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<class UScrollBox> scroll_Chat;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<class UEditableTextBox> edit_Chat;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UChatWidget> ChatWidgetClass;
+
+	
 private:
 
 

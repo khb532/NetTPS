@@ -1,5 +1,4 @@
 #include "NetPlayer.h"
-
 #include "EnhancedInputComponent.h"
 #include "Gun.h"
 #include "HPBar.h"
@@ -13,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/PlayerState.h"
@@ -82,7 +82,19 @@ void ANetPlayer::Tick(float DeltaSeconds)
 	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustReleased(EKeys::One))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("1번키 떼었음"));
-		
+	}
+
+	// 눌렀을 때
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustPressed(EKeys::LeftControl))
+	{
+		if (IsLocallyControlled())
+		{
+			TObjectPtr<APlayerController> pc = GetWorld()->GetFirstPlayerController();
+			pc->SetShowMouseCursor(true);
+			/*FInputModeUIOnly db;
+			pc->SetInputMode(db);*/
+			UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(pc);
+		}
 	}
 	BillboardHpbar();
 	PrintNetLog();
@@ -194,7 +206,7 @@ void ANetPlayer::ClientRPC_OnPossess_Implementation()
 {
 	// MainUI 생성
 	MainUI = CreateWidget<UMainWidget>(GetWorld(), MainWidget);
-	MainUI->AddToViewport();
+	MainUI->AddToViewport(-1);
 	CompHp->SetVisibility(false);
 
 	FString isServer = HasAuthority() ? TEXT("Server") : TEXT("Client");
@@ -302,9 +314,9 @@ void ANetPlayer::FiringAction()
 	TObjectPtr<ANetPlayer> player = Cast<ANetPlayer>(hitInfo.GetActor());
 	if (bHit && player)
 	{
-		TObjectPtr<APlayerState> ps = GetPlayerState();
-		ps->SetScore(ps->GetScore() + 1);
-		ps->OnRep_Score();
+		TObjectPtr<APlayerState> playerstate = GetPlayerState();
+		playerstate->SetScore(playerstate->GetScore() + 1);
+		playerstate->OnRep_Score();
 	}
 }
 
