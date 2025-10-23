@@ -1,4 +1,5 @@
 #include "NetGameInstance.h"
+#include <string>
 #include "OnlineSubsystem.h"		// IOnlineSubsystem*
 #include "OnlineSubsystemUtils.h"	// Online::
 #include "OnlineSessionSettings.h"
@@ -52,6 +53,8 @@ void UNetGameInstance::CreateMySession(FString DisplayName, int32 PlayerCount)
 	SessionSettings.NumPublicConnections = PlayerCount;
 
 	// 커스텀 정보
+	// DisplayName To Base64 Convert
+	DisplayName = StringBase64Encode(DisplayName);
 	SessionSettings.Set(FName("DP_NAME"), DisplayName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	// Settings 로 세션 생성
@@ -114,6 +117,9 @@ void UNetGameInstance::OnFindSessionComplete(bool bWasSuccessful)
 			FString DisplayName;
 
 			Results[i].Session.SessionSettings.Get(FName("DP_NAME"), DisplayName);
+
+			//	DisplayName(Base64) To UTF-8 Convert
+			DisplayName = StringBase64Decode(DisplayName);
 			UE_LOG(LogTemp, Warning, TEXT("Session - %i, Name : %s"), i, *DisplayName)
 
 			OnFindComplete.ExecuteIfBound(i, DisplayName/*Delegate parameters*/);
@@ -158,4 +164,24 @@ void UNetGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCo
 		APlayerController* PC = GetWorld()->GetFirstPlayerController();
 		PC->ClientTravel(URL, TRAVEL_Absolute);
 	}
+}
+
+FString UNetGameInstance::StringBase64Encode(FString& Str)
+{
+	// Str 을 std::String convert
+	std::string utf8String = TCHAR_TO_UTF8(*Str);
+
+	// utf8String To uint8 array converot
+	TArray<uint8> u8 = TArray<uint8>((uint8*)utf8String.c_str(),utf8String.length());
+
+	return FBase64::Encode(u8);
+}
+
+FString UNetGameInstance::StringBase64Decode(FString& Str)
+{
+	TArray<uint8> arr;
+	FBase64::Decode(Str, arr);
+	std::string utf8String((char*)arr.GetData(), arr.Num());
+
+	return UTF8_TO_TCHAR(utf8String.c_str());
 }

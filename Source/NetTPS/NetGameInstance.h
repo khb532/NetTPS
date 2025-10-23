@@ -57,5 +57,11 @@ public:
 	
 	//	세션 참여 완료 함수
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+
+	//	문자열 UTF-8 >> base64 Encode
+	FString StringBase64Encode(FString& Str);
+	
+	//	문자열 UTF-8 << base64 Decode
+	FString StringBase64Decode(FString& Str);
 	
 };
