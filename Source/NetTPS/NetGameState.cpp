@@ -2,6 +2,7 @@
 #include "NetPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "GameWidget.h"
+#include "NetPlayerState.h"
 #include "Containers/ContainerAllocationPolicies.h"
 
 void ANetGameState::AddPlayer(class ANetPlayer* Player)
@@ -31,7 +32,7 @@ void ANetGameState::AddPlayerState(APlayerState* PlayerState)
 		GameUI->AddToViewport();
 	}
 	//	Add PlayerInfo
-	GameUI->AddPlayerInfo();
+	GameUI->AddPlayerInfo(Cast<ANetPlayerState>(PlayerState));
 }
 
 void ANetGameState::ChangeTurn()

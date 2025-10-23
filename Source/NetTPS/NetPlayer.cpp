@@ -15,6 +15,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
@@ -283,7 +284,6 @@ void ANetPlayer::OnReloadComplete()
 
 void ANetPlayer::FiringAction()
 {
-	
 	// 시작 지점
 	FVector startPos = FollowCamera->GetComponentLocation();
 	// 종료 지점
@@ -297,6 +297,15 @@ void ANetPlayer::FiringAction()
 	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startPos, endPos, ECC_Visibility, params);
 	// 모든 [클라] 에게 LineTrace 결과 넘겨서 총쏘게 하자
 	MulticastRPC_FiringAction(bHit, hitInfo, ComboCount);
+
+	//	If 맞은 액터가 Player
+	TObjectPtr<ANetPlayer> player = Cast<ANetPlayer>(hitInfo.GetActor());
+	if (bHit && player)
+	{
+		TObjectPtr<APlayerState> ps = GetPlayerState();
+		ps->SetScore(ps->GetScore() + 1);
+		ps->OnRep_Score();
+	}
 }
 
 void ANetPlayer::OnCombo()

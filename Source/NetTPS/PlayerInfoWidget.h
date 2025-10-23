@@ -14,8 +14,17 @@ class NETTPS_API UPlayerInfoWidget : public UUserWidget
 
 /* Method */
 public:
+	//	Initialize
+	void Init(TObjectPtr<class ANetPlayerState> PlayerState);
 
-
+	//	Udapte Name
+	UFUNCTION()
+	void UpdateName(FString Name);
+	
+	//	Update Score
+	UFUNCTION()
+	void UpdateScore(int32 Score);
+	
 
 private:
 

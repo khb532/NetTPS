@@ -13,7 +13,7 @@ class NETTPS_API UGameWidget : public UUserWidget
 /* Method */
 public:
 	//	PlayerInfoWidget 추가 함수
-	void AddPlayerInfo();
+	void AddPlayerInfo(TObjectPtr<class ANetPlayerState> PlayerState);
 
 
 
