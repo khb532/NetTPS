@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,6 +12,10 @@ class NETTPS_API ANetGameState : public AGameStateBase
 public:
 	void AddPlayer(class ANetPlayer* Player);
 
+	//	PlayerState 추가될 때 호출되는 함수
+	//	Server, Client 모두 호출 됨
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+
 	void ChangeTurn();
 
 	// Calc Spawn Location
@@ -27,5 +29,13 @@ public:
 
 	// Player Spawn Location Index
 	int32 PosIdx = 0;
+
+	//	Game Widget Blueprint
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UGameWidget> GameWidgetClass;
+
+	//	Created Game Widget Pointer
+	UPROPERTY()
+	TObjectPtr<class UGameWidget> GameUI;
 	
 };

@@ -1,7 +1,7 @@
-
 #include "NetGameState.h"
-
 #include "NetPlayer.h"
+#include "Blueprint/UserWidget.h"
+#include "GameWidget.h"
 #include "Containers/ContainerAllocationPolicies.h"
 
 void ANetGameState::AddPlayer(class ANetPlayer* Player)
@@ -17,6 +17,21 @@ void ANetGameState::AddPlayer(class ANetPlayer* Player)
 	}
 
 	CalcPos(Player);
+}
+
+void ANetGameState::AddPlayerState(APlayerState* PlayerState)
+{
+	Super::AddPlayerState(PlayerState);
+
+	//	If GaemUI Not Exist
+	if (GameUI == nullptr)
+	{
+		//	Create GameUI
+		GameUI = CreateWidget<UGameWidget>(GetWorld(), GameWidgetClass);
+		GameUI->AddToViewport();
+	}
+	//	Add PlayerInfo
+	GameUI->AddPlayerInfo();
 }
 
 void ANetGameState::ChangeTurn()
