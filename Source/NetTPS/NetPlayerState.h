@@ -22,7 +22,13 @@ public:
 
 	virtual void OnRep_Score() override;
 
+	//	ServerRPC Send Chat
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_SendChat(const FString& chat);
 
+	//	MultiRPC Send Chat
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_SendChat(const FString& chat);
 private:
 
 

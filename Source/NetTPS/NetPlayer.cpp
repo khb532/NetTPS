@@ -1,5 +1,6 @@
 #include "NetPlayer.h"
 #include "EnhancedInputComponent.h"
+#include "GameWidget.h"
 #include "Gun.h"
 #include "HPBar.h"
 #include "Blueprint/UserWidget.h"
@@ -94,6 +95,10 @@ void ANetPlayer::Tick(float DeltaSeconds)
 			/*FInputModeUIOnly db;
 			pc->SetInputMode(db);*/
 			UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(pc);
+
+			//	현재 눌린 키 버퍼 초기화
+			//	GetWorld()->GetGameState<ANetGameState>()->GameUI->SetKeyboardFocus();
+			pc->FlushPressedKeys();
 		}
 	}
 	BillboardHpbar();
@@ -195,10 +200,15 @@ void ANetPlayer::DieProcess()
 		if (hasGun) TakeGun();
 		// 화면 흑백 처리
 		FollowCamera->PostProcessSettings.ColorSaturation = FVector4(0, 0, 0, 1);
-		// 다시하기 버튼 보이게
-		MainUI->ShowBtnRetry();
+		/*// 다시하기 버튼 보이게
+		MainUI->ShowBtnRetry();*/
+		//	Remove MainUI
+		MainUI->RemoveFromParent();
 		// 마우스 보이게
 		GetWorld()->GetFirstPlayerController()->SetShowMouseCursor(true);
+		//	Show Retry Button
+		TObjectPtr<ANetGameState> gs = Cast<ANetGameState>(GetWorld()->GetGameState());
+		gs->GameUI->ShowBtnRetry(true);
 	}
 }
 

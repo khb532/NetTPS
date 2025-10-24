@@ -22,6 +22,18 @@ public:
 	UFUNCTION()
 	void OnTextboxCommitted(const FText& text, ETextCommit::Type commitMethod);
 
+	//	Add Chat UI
+	void AddChat(FString text);
+
+	UFUNCTION()
+	FEventReply OnPointerEvent (FGeometry MyGeometry, const FPointerEvent& MouseEvent);
+
+	UFUNCTION()
+	void OnRetry();
+
+	UFUNCTION()
+	void ShowBtnRetry(bool visible);
+	
 private:
 
 
@@ -47,6 +59,12 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UChatWidget> ChatWidgetClass;
 
+	//	Border Empty
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<class UBorder> border_Empty;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<class UButton> Btn_Retry;
 	
 private:
 
