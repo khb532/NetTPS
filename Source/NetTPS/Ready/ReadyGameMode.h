@@ -8,5 +8,8 @@ UCLASS()
 class NETTPS_API AReadyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	
 };

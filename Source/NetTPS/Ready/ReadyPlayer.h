@@ -12,9 +12,24 @@ class NETTPS_API AReadyPlayer : public AActor
 public:
 	AReadyPlayer();
 
+
+	virtual void Tick(float DeltaTime) override;
+
+	void SetMesh(int32 idx);
+	
 protected:
 	virtual void BeginPlay() override;
 
+
+
+/* Field*/
 public:
-	virtual void Tick(float DeltaTime) override;
+
+
+private:
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class USkeletalMeshComponent> m_Mesh;
+
+	UPROPERTY(EditAnywhere)
+	TArray<class USkeletalMesh*> m_arr_PlayerMesh;
 };
